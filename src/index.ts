@@ -1,10 +1,3 @@
-import React from 'react'
-import ReactDOM from 'react-dom'
-import $ from 'jquery'
-
-import MyEditor from './components/myeditor'
-
-
 class Line extends Node {
   constructor() {
     super()
@@ -39,10 +32,3 @@ function main() {
 }
 
 main()
-
-ReactDOM.render(
-  <MyEditor />,
-  document.getElementById('example')
-)
-
-module.hot.accept()
