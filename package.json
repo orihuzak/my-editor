@@ -1,0 +1,38 @@
+{
+  "name": "simple-js-webpack-babel-react",
+  "version": "1.0.0",
+  "main": "app.js",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "dev": "webpack-dev-server --mode development",
+    "build": "webpack --mode development",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "babel": {
+    "presets": [
+      "@babel/preset-env",
+      "@babel/preset-react"
+    ]
+  },
+  "devDependencies": {
+    "@babel/core": "^7.1.6",
+    "@babel/preset-env": "^7.1.6",
+    "@babel/preset-react": "^7.0.0",
+    "babel-loader": "^8.0.4",
+    "eslint": "^5.9.0",
+    "eslint-plugin-react": "^7.11.1",
+    "react-hot-loader": "^4.3.12",
+    "webpack": "^4.26.0",
+    "webpack-cli": "^3.1.2",
+    "webpack-dev-server": "^3.1.10"
+  },
+  "dependencies": {
+    "draft-js": "^0.10.5",
+    "electron": "^3.0.10",
+    "jquery": "^3.3.1",
+    "react": "^16.6.3",
+    "react-dom": "^16.6.3"
+  }
+}
