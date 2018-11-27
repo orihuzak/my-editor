@@ -1,5 +1,5 @@
 {
-  "name": "my-editor",
+  "name": "ts-webpack",
   "version": "1.0.0",
   "main": "app.js",
   "license": "MIT",
