@@ -1,0 +1,18 @@
+.line {
+  opacity: 0.5;
+}
+
+.caret {
+  border-left: 1px solid gray;
+  height: 1em;
+  width: 1em;
+}
+
+.input {
+  width: 1px;
+  height: 1em;
+  padding: 0;
+  border: 0;
+  opacity: 0;
+
+}
