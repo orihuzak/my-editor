@@ -11,7 +11,7 @@ module.exports = {
         exclude: /node_modules/,
         use: 'awesome-typescript-loader' },
       { test: /\.css$/,
-        use: ['style-loader', 'css-loader']
+        use: ['css-loader'] // 'style-loader', 必要ならこれをcss-loaderの前に入れる
       }
     ]
   },

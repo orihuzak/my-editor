@@ -8,7 +8,9 @@
         "no-console": false,
         "semicolon": [true, "never"],
         "quotemark": [true, "single"],
-        "no-var-requires": false
+        "no-var-requires": false,
+        "no-angle-bracket-type-assertion": false,
+        "trailing-comma": []
     },
     "rulesDirectory": []
 }

@@ -1,0 +1,35 @@
+/*
+.cursor {
+  position: absolute;
+  width: 1em;
+  height: 18px;
+}
+*/
+
+.rod {
+  display: inline-block;
+  border-left: 2px solid gray;
+  height: 18px;
+}
+
+.input {
+  resize: none;
+  overflow: hidden;
+  outline: 0;
+
+  display: inline-block;
+  line-height: 100%;
+  width: 0;
+  height: 18px;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  /* opacity: 0; */
+  /* background: transparent; */
+  /* cursor: text; */
+  /* カーソルを非表示にするcss
+  color : transparent;
+  text-shadow : 0 0 0 #000;
+  */ 
+}
