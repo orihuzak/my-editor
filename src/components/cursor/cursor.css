@@ -1,11 +1,3 @@
-/*
-.cursor {
-  position: absolute;
-  width: 1em;
-  height: 18px;
-}
-*/
-
 .rod {
   display: inline-block;
   border-left: 1px solid #000;

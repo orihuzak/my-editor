@@ -20,11 +20,6 @@ export default class Editor extends HTMLElement {
     this.root = document.createElement('div')
     this.root.className = 'editor'
 
-    // 入力された文字列の幅を取得するためのspan
-    this.rawString = document.createElement('span')
-    this.rawString.className = 'raw-string'
-    this.root.appendChild(this.rawString)
-
     // カーソルを設定
     this.cursor = new Cursor()
     this.cursor.className = 'cursor'
@@ -32,6 +27,11 @@ export default class Editor extends HTMLElement {
     this.cursor.input.onkeyup = (e) => this.keyUp(e)
     this.cursor.input.onkeydown = (e) => this.keyDown(e)
     this.root.appendChild(this.cursor)
+
+    // 入力された文字列の幅を取得するためのspan
+    this.rawString = document.createElement('span')
+    this.rawString.className = 'raw-string'
+    //this.root.appendChild(this.rawString)
 
     // スタイルを設定
     const style = document.createElement('style')
@@ -56,13 +56,19 @@ export default class Editor extends HTMLElement {
       const cursorPos: number = parseInt(this.cursor.style.left, 10)
       this.cursor.style.left = cursorPos + this.rawString.offsetWidth + 'px'
       this.inputTextToLine()
-      this.resizeInput()
+      this.resetInputAndRawString()
     }
     // console.log(e.type + `: ` + e.which)
   }
 
   private keyDown(e): void {
     this.keyDownCode = e.which
+    if (e.which === 8) { // 入力がバックスペースの時
+      // const cursorRect = this.cursor.getBoundingClientRect()
+      //const elem = this.shadow.elementFromPoint(cursorRect.left, cursorRect.top)
+      console.log(this.rawString.previousSibling)
+      this.currentLine.removeChild(this.rawString.previousSibling)
+    }
     // console.log(e.type + ': ' + e.which)
   }
 
@@ -71,8 +77,8 @@ export default class Editor extends HTMLElement {
   }
 
   private onClick(e): void {
-    this.cursor.input.focus()
     this.putCursor(e)
+    this.cursor.input.focus()
   }
 
   private inputTextToLine() {
@@ -87,8 +93,6 @@ export default class Editor extends HTMLElement {
         this.currentLine.appendChild(span)
       }
     }
-    // this.lines[0].innerText += this.cursor.input.value
-    this.cursor.input.value = '' // valueを初期化
   }
 
   /** textareaの幅と高さを入力された文字列に応じて変化させる */
@@ -96,6 +100,15 @@ export default class Editor extends HTMLElement {
     this.rawString.innerText = this.cursor.input.value
     this.cursor.input.style.width = this.rawString.offsetWidth + 'px'
     // this.cursor.input.style.height = this.rawString.offsetHeight + 'px'
+  }
+
+  /**
+   * IME入力が決定したらinput.valueを初期化・inputをresize・currentLineからrawStringを削除する
+   */
+  private resetInputAndRawString(): void {
+    this.cursor.input.value = '' // valueを初期化
+    this.resizeInput()
+    this.currentLine.removeChild(this.rawString)
   }
 
   private newLine(): void {
@@ -135,19 +148,46 @@ export default class Editor extends HTMLElement {
       if (diffR <= diffL) {
         this.currentChar = clickedElem.nextSibling // 現在のcharを登録
         this.cursor.style.left = objR + 'px'
+        clickedElem.parentNode.insertBefore(this.rawString, clickedElem.nextSibling) // rawStringを追加
       } else {
         this.currentChar = clickedElem // 現在のcharを登録
         this.cursor.style.left = objL + 'px'
+        clickedElem.parentNode.insertBefore(this.rawString, clickedElem) // rawStringを追加
       }
     } else if (clickedElem.className === 'line') {
       this.currentLine = clickedElem // 現在のlineを登録
       this.currentChar = null
-      const child = clickedElem.lastElementChild
-      if (child) {
-        this.cursor.style.left = child.getBoundingClientRect().right + 'px'
+      const lastChild = clickedElem.lastElementChild
+      if (lastChild) {
+        this.cursor.style.left = lastChild.getBoundingClientRect().right + 'px'
       } else {
         this.cursor.style.left = objL + 'px'
       }
+      clickedElem.appendChild(this.rawString) // rawStringを挿入
+    }
+  }
+
+  /**
+   * クリックされた位置にカーソルをlineの子要素として挿入する
+   * 現在使われておりません
+   * @param e
+   */
+  private putCursor2(e: MouseEvent): void {
+    const clickedElem = this.shadow.elementFromPoint(e.x, e.y)
+    const rect = clickedElem.getBoundingClientRect()
+    if (clickedElem.className === 'char') {
+      this.currentLine = clickedElem.parentElement // 現在のlineを登録
+      if ((rect.right - e.x) <= (e.x - rect.left)) {
+        this.currentChar = clickedElem.nextSibling // 現在のcharを登録
+        clickedElem.parentNode.insertBefore(this.cursor, clickedElem.nextSibling)
+      } else {
+        this.currentChar = clickedElem // 現在のcharを登録
+        clickedElem.parentNode.insertBefore(this.cursor, clickedElem)
+      }
+    } else if (clickedElem.className === 'line') {
+      this.currentLine = clickedElem // 現在のlineを登録
+      this.currentChar = null
+      clickedElem.appendChild(this.cursor)
     }
   }
 }
