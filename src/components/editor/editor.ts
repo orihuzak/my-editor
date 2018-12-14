@@ -9,8 +9,8 @@ export default class Editor extends HTMLElement {
   private shadow: ShadowRoot
   private root: HTMLDivElement
   private cursor: Cursor
-  private currentLine: HTMLElement
-  private inputMemo: string = ''
+  private currentLine: Element
+  private currentChar: Node
   private rawString: HTMLSpanElement // 入力された生の文字列の幅を取得するためのspan
   private keyDownCode: string
   constructor() {
@@ -53,9 +53,9 @@ export default class Editor extends HTMLElement {
     if (e.which === 13 && e.which !== this.keyDownCode) {
       // console.log('IME確定')
       // cursorの位置を入力された文字の幅分右に移動する
-      const cursorPosition: number = parseInt(this.cursor.style.left, 10)
-      this.cursor.style.left = cursorPosition + this.rawString.offsetWidth - 1 + 'px'
-      this.textInput() // lineに書き込み
+      const cursorPos: number = parseInt(this.cursor.style.left, 10)
+      this.cursor.style.left = cursorPos + this.rawString.offsetWidth + 'px'
+      this.inputTextToLine()
       this.resizeInput()
     }
     // console.log(e.type + `: ` + e.which)
@@ -66,23 +66,26 @@ export default class Editor extends HTMLElement {
     // console.log(e.type + ': ' + e.which)
   }
 
-  private onInput(e) {
+  private onInput(e): void {
     this.resizeInput()
   }
 
-  private onClick(e) {
-    this.cursor.input.focus() // inputにfocusを当てる
+  private onClick(e): void {
+    this.cursor.input.focus()
     this.putCursor(e)
   }
 
-  private textInput() {
+  private inputTextToLine() {
     // input.valueを一文字ずつ分割してspan要素にする
     for (const char of this.cursor.input.value) {
       const span = document.createElement('span')
       span.className = 'char'
       span.innerText = char
-      // console.log(char)
-      this.lines[0].appendChild(span)
+      if (this.currentChar) {
+        this.currentLine.insertBefore(span, this.currentChar)
+      } else {
+        this.currentLine.appendChild(span)
+      }
     }
     // this.lines[0].innerText += this.cursor.input.value
     this.cursor.input.value = '' // valueを初期化
@@ -117,24 +120,31 @@ export default class Editor extends HTMLElement {
     this.currentLine = newLine
   }
 
-  // カーソルを移動させるメソッド
-  private putCursor(e: MouseEvent) {
+  /**
+   * カーソルを表示する場所を決めて表示する。テキストの挿入位置を決める
+   */
+  private putCursor(e: MouseEvent): void {
     // カーソルの移動位置が文字の上に重ならないように配置する
     const clickedElem = this.shadow.elementFromPoint(e.x, e.y)
     const objL: number = clickedElem.getBoundingClientRect().left
     const objR: number = clickedElem.getBoundingClientRect().right
     if (clickedElem.className === 'char') {
+      this.currentLine = clickedElem.parentElement // 現在のlineを登録
       const diffL = e.x - objL
       const diffR = objR - e.x
       if (diffR <= diffL) {
-        this.cursor.style.left = objR - 1 + 'px' // マイナス1は見た目の調整用
+        this.currentChar = clickedElem.nextSibling // 現在のcharを登録
+        this.cursor.style.left = objR + 'px'
       } else {
-        this.cursor.style.left = objL - 1 + 'px'
+        this.currentChar = clickedElem // 現在のcharを登録
+        this.cursor.style.left = objL + 'px'
       }
     } else if (clickedElem.className === 'line') {
+      this.currentLine = clickedElem // 現在のlineを登録
+      this.currentChar = null
       const child = clickedElem.lastElementChild
       if (child) {
-        this.cursor.style.left = child.getBoundingClientRect().right - 1 + 'px'
+        this.cursor.style.left = child.getBoundingClientRect().right + 'px'
       } else {
         this.cursor.style.left = objL + 'px'
       }
