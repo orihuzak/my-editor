@@ -15,6 +15,7 @@ export default class Cursor extends HTMLElement {
     this.input = document.createElement('textarea')
     this.input.className = 'input'
     this.input.wrap = 'off'
+    this.input.autofocus = true
     // this.input.setAttribute('type', 'text')
 
     // スタイルを追加

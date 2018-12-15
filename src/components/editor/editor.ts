@@ -7,7 +7,6 @@ import { v4 } from 'uuid'
 export default class Editor extends HTMLElement {
   private lines: HTMLDivElement[] = []
   private shadow: ShadowRoot
-  private root: HTMLDivElement
   private cursor: Cursor
   private currentLine: Element
   private currentChar: Node
@@ -17,8 +16,12 @@ export default class Editor extends HTMLElement {
     super()
     // コンストラクターの中でシャドウルートをつくる必要があるらしい
     this.shadow = this.attachShadow({ mode: 'open' })
-    this.root = document.createElement('div')
-    this.root.className = 'editor'
+    window.onload = () => {
+      // カーソルを置く
+      const lineRect = this.currentLine.getBoundingClientRect()
+      this.cursor.style.left = lineRect.left + 'px'
+      console.log(lineRect.left)
+    }
 
     // カーソルを設定
     this.cursor = new Cursor()
@@ -26,12 +29,11 @@ export default class Editor extends HTMLElement {
     this.cursor.input.oninput = (e) => this.onInput(e)
     this.cursor.input.onkeyup = (e) => this.keyUp(e)
     this.cursor.input.onkeydown = (e) => this.keyDown(e)
-    this.root.appendChild(this.cursor)
+    this.shadow.appendChild(this.cursor)
 
     // 入力された文字列の幅を取得するためのspan
     this.rawString = document.createElement('span')
     this.rawString.className = 'raw-string'
-    //this.root.appendChild(this.rawString)
 
     // スタイルを設定
     const style = document.createElement('style')
@@ -39,13 +41,11 @@ export default class Editor extends HTMLElement {
     this.shadow.appendChild(style)
 
     this.newLine()
-
-    this.shadow.appendChild(this.root)
   }
 
   public drawLines() {
     for (const line of this.lines) {
-      this.root.appendChild(line)
+      this.shadow.appendChild(line)
     }
   }
 
@@ -56,7 +56,9 @@ export default class Editor extends HTMLElement {
       const cursorPos: number = parseInt(this.cursor.style.left, 10)
       this.cursor.style.left = cursorPos + this.rawString.offsetWidth + 'px'
       this.inputTextToLine()
-      this.resetInputAndRawString()
+      // IME入力が決定したらinput.valueを初期化し、inputをresizeする
+      this.cursor.input.value = '' // valueを初期化
+      this.resizeInput()
     }
     // console.log(e.type + `: ` + e.which)
   }
@@ -77,20 +79,30 @@ export default class Editor extends HTMLElement {
   }
 
   private onClick(e): void {
-    this.putCursor(e)
+    this.putCursor(e.x, e.y)
     this.cursor.input.focus()
   }
 
+  /**
+   * 現在のlineに入力が決定した文字列を1文字ずつ分割したspan要素にして入れる
+   */
   private inputTextToLine() {
-    // input.valueを一文字ずつ分割してspan要素にする
-    for (const char of this.cursor.input.value) {
+    const chars = [...this.cursor.input.value]
+    const lastIndex = chars.length - 1
+    for (const [i, char] of chars.entries()) {
       const span = document.createElement('span')
       span.className = 'char'
       span.innerText = char
       if (this.currentChar) {
         this.currentLine.insertBefore(span, this.currentChar)
+        if (i === lastIndex) {
+          this.currentLine.insertBefore(this.rawString, this.currentChar)
+        }
       } else {
         this.currentLine.appendChild(span)
+        if (i === lastIndex) {
+          this.currentLine.appendChild(this.rawString)
+        }
       }
     }
   }
@@ -99,17 +111,11 @@ export default class Editor extends HTMLElement {
   private resizeInput() {
     this.rawString.innerText = this.cursor.input.value
     this.cursor.input.style.width = this.rawString.offsetWidth + 'px'
-    // this.cursor.input.style.height = this.rawString.offsetHeight + 'px'
   }
 
   /**
    * IME入力が決定したらinput.valueを初期化・inputをresize・currentLineからrawStringを削除する
    */
-  private resetInputAndRawString(): void {
-    this.cursor.input.value = '' // valueを初期化
-    this.resizeInput()
-    this.currentLine.removeChild(this.rawString)
-  }
 
   private newLine(): void {
     const newLine = document.createElement('div')
@@ -128,23 +134,25 @@ export default class Editor extends HTMLElement {
       }
     } while (bool)
     newLine.setAttribute('id', uuid)
+    newLine.appendChild(this.rawString) // rawString設置
     this.lines.push(newLine)
     this.drawLines()
     this.currentLine = newLine
   }
 
   /**
-   * カーソルを表示する場所を決めて表示する。テキストの挿入位置を決める
+   * クリックされた場所にカーソルを置き、同時にテキストの挿入位置を決める
+   * 引数はクリックされた座標x, y
    */
-  private putCursor(e: MouseEvent): void {
+  private putCursor(x: number, y: number): void {
     // カーソルの移動位置が文字の上に重ならないように配置する
-    const clickedElem = this.shadow.elementFromPoint(e.x, e.y)
+    const clickedElem = this.shadow.elementFromPoint(x, y)
     const objL: number = clickedElem.getBoundingClientRect().left
     const objR: number = clickedElem.getBoundingClientRect().right
     if (clickedElem.className === 'char') {
       this.currentLine = clickedElem.parentElement // 現在のlineを登録
-      const diffL = e.x - objL
-      const diffR = objR - e.x
+      const diffL = x - objL
+      const diffR = objR - x
       if (diffR <= diffL) {
         this.currentChar = clickedElem.nextSibling // 現在のcharを登録
         this.cursor.style.left = objR + 'px'
