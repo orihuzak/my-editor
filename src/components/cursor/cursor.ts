@@ -14,9 +14,9 @@ export default class Cursor extends HTMLElement {
     this.rod.className = 'rod'
     this.input = document.createElement('textarea')
     this.input.className = 'input'
-    this.input.wrap = 'off'
+    this.input.wrap = 'soft'
+    this.input.rows = 1
     this.input.autofocus = true
-    // this.input.setAttribute('type', 'text')
 
     // スタイルを追加
     const style = document.createElement('style')
