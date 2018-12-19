@@ -73,19 +73,16 @@ export default class Editor extends HTMLElement {
         this.drawCursor()
       }
     } else if (e.which === 13) { // return入力
-      this.insertNewLine(this.makeNewLine())
       this.cursor.input.value = ''
+      this.insertNewLine(this.makeNewLine())
       this.drawCursor()
     }
     // console.log(e.type + ': ' + e.which)
   }
 
   private onInput(e): void {
-    if (e.which === 13) {
-      this.cursor.input.value = ''
-    } else {
-      this.resizeInput()
-    }
+    // 改行コードをinput.valueから削除する
+    this.resizeInput()
   }
 
   private onClick(e): void {
@@ -98,18 +95,18 @@ export default class Editor extends HTMLElement {
    * 現在のlineに入力が決定した文字列を1文字ずつ分割したspan要素にして入れる
    */
   private inputTextToLine() {
-    const chars = [...this.cursor.input.value]
+    const chars = [...this.cursor.getValueExcludedReturnCodes()]
     const lastIndex = chars.length - 1
     const currentLine = this.rawString.parentElement
-    const currentChar = this.rawString.previousSibling
+    const nextChar = this.rawString.nextSibling
     for (const [i, char] of chars.entries()) {
       const span = document.createElement('span')
       span.className = 'char'
       span.innerText = char
-      if (currentChar) {
-        currentLine.insertBefore(span, currentChar)
+      if (nextChar) {
+        currentLine.insertBefore(span, nextChar)
         if (i === lastIndex) {
-          currentLine.insertBefore(this.rawString, currentChar)
+          currentLine.insertBefore(this.rawString, nextChar)
         }
       } else {
         currentLine.appendChild(span)
@@ -122,7 +119,7 @@ export default class Editor extends HTMLElement {
 
   /** textareaの幅と高さを入力された文字列に応じて変化させる */
   private resizeInput() {
-    this.rawString.innerText = this.cursor.input.value
+    this.rawString.innerText = this.cursor.getValueExcludedReturnCodes()
     this.cursor.input.style.width = this.rawString.offsetWidth + 'px'
   }
 

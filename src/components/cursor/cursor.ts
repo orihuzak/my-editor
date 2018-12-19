@@ -1,5 +1,7 @@
 const css = require('./cursor.css').toString()
 
+const returnCodes: RegExp = /\r|\n|\r\n/
+
 export default class Cursor extends HTMLElement {
   public input: HTMLTextAreaElement
   public rod: HTMLDivElement
@@ -26,6 +28,14 @@ export default class Cursor extends HTMLElement {
     // html要素を追加
     this.shadow.appendChild(this.input)
     this.shadow.appendChild(this.rod)
+  }
+
+  public getValue(): string {
+    return this.input.value
+  }
+
+  public getValueExcludedReturnCodes(): string {
+    return this.input.value.replace(returnCodes, '')
   }
 }
 

@@ -10,6 +10,10 @@
   border-bottom: 1px dotted gray;
 }
 
+.char {
+  /*height: 18px;*/
+}
+
 my-cursor {
   position: absolute;
 }
