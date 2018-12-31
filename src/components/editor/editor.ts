@@ -123,10 +123,15 @@ export default class Editor extends HTMLElement {
     this.cursor.input.style.width = this.rawString.offsetWidth + 'px'
   }
 
-  /** 新しいlineを挿入する */
+  /** 新しいlineを現在カーソルがある行の次の要素として挿入しつつ、カーソルより後にあるspan.charを全て新しい行に挿入する */
   private insertNewLine(newLine: HTMLDivElement): void {
     const currentLine = this.rawString.parentElement
-    newLine.appendChild(this.rawString) // newLineにrawString設置
+    const bros = [...currentLine.children]
+    const index = bros.indexOf(this.rawString)
+    const newChildren = bros.slice(index)
+    for (const child of newChildren) {
+      newLine.appendChild(child)
+    }
     this.lines.insertBefore(newLine, currentLine.nextSibling)
   }
 
@@ -150,9 +155,8 @@ export default class Editor extends HTMLElement {
     return newLine
   }
 
-  /** クリックされた位置にspan.rawStringを挿入する */
+  /** クリックされた位置にspan.rawStringを挿入し、カーソルの移動位置が文字の上に重ならないように配置する */
   private inserRawString(x: number, y: number): void {
-    // カーソルの移動位置が文字の上に重ならないように配置する
     const clickedElem = this.shadow.elementFromPoint(x, y)
     const objL: number = clickedElem.getBoundingClientRect().left
     const objR: number = clickedElem.getBoundingClientRect().right
