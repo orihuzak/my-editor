@@ -66,7 +66,7 @@ export default class Editor extends HTMLElement {
         this.drawCursor()
       } else if (currentLine.children.length === 1
                  && currentLine !== this.lines.firstChild) {
-        // lineにrawstringだけかつcurrentlineがlinesの先頭の要素ではないときを削除
+        // lineにrawstringだけかつcurrentlineがlinesの先頭の要素ではないとき削除
         const prevLine = currentLine.previousElementSibling
         prevLine.appendChild(this.rawString)
         this.lines.removeChild(currentLine)
@@ -76,8 +76,32 @@ export default class Editor extends HTMLElement {
       this.cursor.input.value = ''
       this.insertNewLine(this.makeNewLine())
       this.drawCursor()
+    } else if (e.which === 37) { // 左入力
+      const prevChar = this.rawString.previousSibling
+      if (prevChar) {
+        currentLine.insertBefore(this.rawString, prevChar)
+      } else {
+        const prevLine = currentLine.previousSibling
+        if (prevLine) {
+          prevLine.appendChild(this.rawString)
+        }
+      }
+      this.drawCursor()
+    } else if (e.which === 38) { // 上入力
+      const prevLine = currentLine.previousElementSibling
+      if (prevLine) {
+        const prevChildren = [...prevLine.children]
+        if (prevChildren) {
+          const index = [...currentLine.children].indexOf(this.rawString)
+          const target = prevChildren[index]
+          prevLine.insertBefore(this.rawString, target)
+        } else {
+          prevLine.appendChild(this.rawString)
+        }
+      }
+      this.drawCursor()
     }
-    // console.log(e.type + ': ' + e.which)
+    print(e.key + ': ' + e.which)
   }
 
   private onInput(e): void {
