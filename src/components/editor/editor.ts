@@ -9,7 +9,7 @@ export default class Editor extends HTMLElement {
   private lines: HTMLDivElement
   private shadow: ShadowRoot
   private cursor: Cursor
-  private rawString: HTMLSpanElement // 入力された生の文字列の幅を取得するためのspan
+  private rawStr: HTMLSpanElement // 入力された生の文字列の幅を取得するためのspan
   private keyDownCode: string
   constructor() {
     super()
@@ -31,8 +31,8 @@ export default class Editor extends HTMLElement {
     this.shadow.appendChild(this.cursor)
 
     // 入力された文字列の幅を取得するためのspan
-    this.rawString = document.createElement('span')
-    this.rawString.className = 'raw-string'
+    this.rawStr = document.createElement('span')
+    this.rawStr.className = 'raw-string'
 
     // スタイルを設定
     const style = document.createElement('style')
@@ -42,7 +42,7 @@ export default class Editor extends HTMLElement {
 
     // 最初の行を追加
     const newLine = this.makeNewLine()
-    newLine.appendChild(this.rawString)
+    newLine.appendChild(this.rawStr)
     this.lines.appendChild(newLine)
   }
 
@@ -58,17 +58,18 @@ export default class Editor extends HTMLElement {
 
   /** this.linesを使わないkeydown */
   private keyDown(e): void {
+    // print(e.key + ': ' + e.which)
     this.keyDownCode = e.which
-    const currentLine = this.rawString.parentElement
+    const currentLine = this.rawStr.parentElement
     if (e.which === 8) { // バックスペース入力
       if (currentLine.children.length > 1) {
-        currentLine.removeChild(this.rawString.previousSibling)
+        currentLine.removeChild(this.rawStr.previousSibling)
         this.drawCursor()
       } else if (currentLine.children.length === 1
                  && currentLine !== this.lines.firstChild) {
-        // lineにrawstringだけかつcurrentlineがlinesの先頭の要素ではないとき削除
+        // lineにrawStrだけかつcurrentlineがlinesの先頭の要素ではないとき削除
         const prevLine = currentLine.previousElementSibling
-        prevLine.appendChild(this.rawString)
+        prevLine.appendChild(this.rawStr)
         this.lines.removeChild(currentLine)
         this.drawCursor()
       }
@@ -77,13 +78,13 @@ export default class Editor extends HTMLElement {
       this.insertNewLine(this.makeNewLine())
       this.drawCursor()
     } else if (e.which === 37) { // 左入力
-      const prevChar = this.rawString.previousSibling
+      const prevChar = this.rawStr.previousSibling
       if (prevChar) {
-        currentLine.insertBefore(this.rawString, prevChar)
+        currentLine.insertBefore(this.rawStr, prevChar)
       } else {
         const prevLine = currentLine.previousSibling
         if (prevLine) {
-          prevLine.appendChild(this.rawString)
+          prevLine.appendChild(this.rawStr)
         }
       }
       this.drawCursor()
@@ -92,16 +93,41 @@ export default class Editor extends HTMLElement {
       if (prevLine) {
         const prevChildren = [...prevLine.children]
         if (prevChildren) {
-          const index = [...currentLine.children].indexOf(this.rawString)
+          const index = [...currentLine.children].indexOf(this.rawStr)
           const target = prevChildren[index]
-          prevLine.insertBefore(this.rawString, target)
+          prevLine.insertBefore(this.rawStr, target)
         } else {
-          prevLine.appendChild(this.rawString)
+          prevLine.appendChild(this.rawStr)
         }
       }
       this.drawCursor()
+    } else if (e.which === 39) { // 右入力
+      const nextChar = this.rawStr.nextSibling
+      if (nextChar) {
+        currentLine.insertBefore(this.rawStr, nextChar.nextSibling)
+      } else {
+        const nextLine = currentLine.nextSibling
+        if (nextLine) {
+          nextLine.insertBefore(this.rawStr, nextLine.firstChild)
+        }
+      }
+      this.drawCursor()
+    } else if (e.which === 40) { // 下入力
+      const nextLine = currentLine.nextElementSibling
+      if (nextLine) {
+        const nextChildren = [...nextLine.children]
+        if (nextChildren) {
+          const index = [...currentLine.children].indexOf(this.rawStr)
+          const target = nextChildren[index]
+          nextLine.insertBefore(this.rawStr, target)
+        } else {
+          nextLine.appendChild(this.rawStr)
+        }
+      } else {
+        currentLine.appendChild(this.rawStr)
+      }
+      this.drawCursor()
     }
-    print(e.key + ': ' + e.which)
   }
 
   private onInput(e): void {
@@ -111,7 +137,7 @@ export default class Editor extends HTMLElement {
 
   private onClick(e): void {
     // this.putCursor(e.x, e.y)
-    this.inserRawString(e.x, e.y)
+    this.insertRawStr(e.x, e.y)
     this.drawCursor()
   }
 
@@ -121,8 +147,8 @@ export default class Editor extends HTMLElement {
   private inputTextToLine() {
     const chars = [...this.cursor.getValueExcludedReturnCodes()]
     const lastIndex = chars.length - 1
-    const currentLine = this.rawString.parentElement
-    const nextChar = this.rawString.nextSibling
+    const currentLine = this.rawStr.parentElement
+    const nextChar = this.rawStr.nextSibling
     for (const [i, char] of chars.entries()) {
       const span = document.createElement('span')
       span.className = 'char'
@@ -130,12 +156,12 @@ export default class Editor extends HTMLElement {
       if (nextChar) {
         currentLine.insertBefore(span, nextChar)
         if (i === lastIndex) {
-          currentLine.insertBefore(this.rawString, nextChar)
+          currentLine.insertBefore(this.rawStr, nextChar)
         }
       } else {
         currentLine.appendChild(span)
         if (i === lastIndex) {
-          currentLine.appendChild(this.rawString)
+          currentLine.appendChild(this.rawStr)
         }
       }
     }
@@ -143,15 +169,15 @@ export default class Editor extends HTMLElement {
 
   /** textareaの幅と高さを入力された文字列に応じて変化させる */
   private resizeInput() {
-    this.rawString.innerText = this.cursor.getValueExcludedReturnCodes()
-    this.cursor.input.style.width = this.rawString.offsetWidth + 'px'
+    this.rawStr.innerText = this.cursor.getValueExcludedReturnCodes()
+    this.cursor.input.style.width = this.rawStr.offsetWidth + 'px'
   }
 
   /** 新しいlineを現在カーソルがある行の次の要素として挿入しつつ、カーソルより後にあるspan.charを全て新しい行に挿入する */
   private insertNewLine(newLine: HTMLDivElement): void {
-    const currentLine = this.rawString.parentElement
+    const currentLine = this.rawStr.parentElement
     const bros = [...currentLine.children]
-    const index = bros.indexOf(this.rawString)
+    const index = bros.indexOf(this.rawStr)
     const newChildren = bros.slice(index)
     for (const child of newChildren) {
       newLine.appendChild(child)
@@ -180,7 +206,7 @@ export default class Editor extends HTMLElement {
   }
 
   /** クリックされた位置にspan.rawStringを挿入し、カーソルの移動位置が文字の上に重ならないように配置する */
-  private inserRawString(x: number, y: number): void {
+  private insertRawStr(x: number, y: number): void {
     const clickedElem = this.shadow.elementFromPoint(x, y)
     const objL: number = clickedElem.getBoundingClientRect().left
     const objR: number = clickedElem.getBoundingClientRect().right
@@ -188,18 +214,18 @@ export default class Editor extends HTMLElement {
       const diffL = x - objL
       const diffR = objR - x
       if (diffR <= diffL) {
-        clickedElem.parentNode.insertBefore(this.rawString, clickedElem.nextSibling) // rawStringを追加
+        clickedElem.parentNode.insertBefore(this.rawStr, clickedElem.nextSibling) // rawStrを追加
       } else {
-        clickedElem.parentNode.insertBefore(this.rawString, clickedElem) // rawStringを追加
+        clickedElem.parentNode.insertBefore(this.rawStr, clickedElem) // rawStrを追加
       }
     } else if (clickedElem.className === 'line') {
-      clickedElem.appendChild(this.rawString) // rawStringを挿入
+      clickedElem.appendChild(this.rawStr) // rawStrを挿入
     }
   }
 
-  /** span.rawStringの右端の位置にcursorを表示する */
+  /** span.rawStrの右端の位置にcursorを表示する */
   private drawCursor(): void {
-    const rawStrRect = this.rawString.getBoundingClientRect()
+    const rawStrRect = this.rawStr.getBoundingClientRect()
     this.cursor.style.left = rawStrRect.right + 'px'
     this.cursor.style.top = rawStrRect.top + 'px'
     this.cursor.input.focus()
