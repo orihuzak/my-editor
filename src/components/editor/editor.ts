@@ -62,17 +62,23 @@ export default class Editor extends HTMLElement {
     this.keyDownCode = e.which
     const currentLine = this.rawStr.parentElement
     if (e.which === 8) { // バックスペース入力
-      if (currentLine.children.length > 1) {
-        currentLine.removeChild(this.rawStr.previousSibling)
-        this.drawCursor()
-      } else if (currentLine.children.length === 1
-                 && currentLine !== this.lines.firstChild) {
-        // lineにrawStrだけかつcurrentlineがlinesの先頭の要素ではないとき削除
-        const prevLine = currentLine.previousElementSibling
-        prevLine.appendChild(this.rawStr)
-        this.lines.removeChild(currentLine)
-        this.drawCursor()
+      if (currentLine === this.lines.firstChild) {
+        if (currentLine.firstChild !== this.rawStr) {
+          currentLine.removeChild(this.rawStr.previousSibling)
+        }
+      } else {
+        if (currentLine.firstChild === this.rawStr) {
+          const children = [...currentLine.children]
+          const prevLine = currentLine.previousSibling
+          for (const child of children) {
+            prevLine.appendChild(child)
+          }
+          this.lines.removeChild(currentLine)
+        } else {
+          currentLine.removeChild(this.rawStr.previousSibling)
+        }
       }
+      this.drawCursor()
     } else if (e.which === 13) { // return入力
       this.cursor.input.value = ''
       this.insertNewLine(this.makeNewLine())
