@@ -10,14 +10,12 @@ export default class Editor extends HTMLElement {
   private shadow: ShadowRoot
   private cursor: Cursor
   private rawStr: HTMLSpanElement // 入力された生の文字列の幅を取得するためのspan
-  private keyDownCode: string
+  private keyDownCode: number
+  private inputData: string
   constructor() {
     super()
     // コンストラクターの中でシャドウルートをつくる必要があるらしい
     this.shadow = this.attachShadow({ mode: 'open' })
-    window.onload = () => { // 画面読み込み時の処理
-      this.drawCursor()
-    }
 
     this.lines = document.createElement('div')
     this.lines.className = 'lines'
@@ -26,8 +24,10 @@ export default class Editor extends HTMLElement {
     this.cursor = new Cursor()
     this.cursor.className = 'cursor'
     this.cursor.input.oninput = (e) => this.onInput(e)
-    this.cursor.input.onkeyup = (e) => this.keyUp(e)
     this.cursor.input.onkeydown = (e) => this.keyDown(e)
+    this.cursor.input.onkeypress = (e) => this.keyPress(e)
+    this.cursor.input.onkeyup = (e) => this.keyUp(e)
+    this.cursor.input.addEventListener('compositionend', (e) => this.writeToLine(e))
     this.shadow.appendChild(this.cursor)
 
     // 入力された文字列の幅を取得するためのspan
@@ -44,21 +44,15 @@ export default class Editor extends HTMLElement {
     const newLine = this.makeNewLine()
     newLine.appendChild(this.rawStr)
     this.lines.appendChild(newLine)
-  }
 
-  private keyUp(e): void {
-    if (e.which === 13 && e.which !== this.keyDownCode) {
+    // 画面読み込み時の処理
+    window.onload = () => {
       this.drawCursor()
-      this.inputTextToLine()
-      this.cursor.input.value = '' // valueを初期化
-      this.resizeInput()
     }
-    // console.log(e.type + `: ` + e.which)
   }
 
-  /** this.linesを使わないkeydown */
   private keyDown(e): void {
-    // print(e.key + ': ' + e.which)
+    // print(`${e.type}: ${e.key}: ${e.which}`)
     this.keyDownCode = e.which
     const currentLine = this.rawStr.parentElement
     if (e.which === 8) { // バックスペース入力
@@ -80,7 +74,7 @@ export default class Editor extends HTMLElement {
       }
       this.drawCursor()
     } else if (e.which === 13) { // return入力
-      this.cursor.input.value = ''
+      this.cursor.input.value = '' // これいる？
       this.insertNewLine(this.makeNewLine())
       this.drawCursor()
     } else if (e.which === 37) { // 左入力
@@ -136,9 +130,25 @@ export default class Editor extends HTMLElement {
     }
   }
 
+  private keyPress(e): void {
+    // print(`${e.type}: ${e.key}: ${e.which}`)
+  }
+
+  private keyUp(e): void {
+    // print(`${e.type}: ${e.key}: ${e.which}`)
+  }
+
   private onInput(e): void {
-    // 改行コードをinput.valueから削除する
+    // print(`${e.type}: ${e.inputType}: ${e.dataTransfer}: ${e.data}: ${e.isComposing}`)
     this.resizeInput()
+  }
+
+  private writeToLine(e): void {
+    // print(e.type)
+    this.inputTextToLine()
+    this.cursor.resetValue() // valueを初期化
+    this.resizeInput()
+    this.drawCursor()
   }
 
   private onClick(e): void {

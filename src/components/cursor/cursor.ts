@@ -18,7 +18,7 @@ export default class Cursor extends HTMLElement {
     this.input.className = 'input'
     this.input.wrap = 'soft'
     this.input.rows = 1
-    this.input.autofocus = true
+    this.input.autofocus = true // ページロードされた時にフォーカスを当てるかどうか
 
     // スタイルを追加
     const style = document.createElement('style')
@@ -28,6 +28,10 @@ export default class Cursor extends HTMLElement {
     // html要素を追加
     this.shadow.appendChild(this.input)
     this.shadow.appendChild(this.rod)
+  }
+
+  public resetValue(): void {
+    this.input.value = ''
   }
 
   public getValue(): string {
