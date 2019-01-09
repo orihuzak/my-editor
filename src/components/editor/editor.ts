@@ -28,8 +28,7 @@ export default class Editor extends HTMLElement {
   private shadow: ShadowRoot
   private cursor: Cursor
   private rawStr: HTMLSpanElement // 入力された生の文字列の幅を取得するためのspan
-  private keyDownCode: number
-  private inputData: string
+  private keyStatus: {[n: number]: boolean} = {}
   constructor() {
     super()
     // コンストラクターの中でシャドウルートをつくる必要があるらしい
@@ -71,9 +70,18 @@ export default class Editor extends HTMLElement {
 
   private keyDown(e: KeyboardEvent): void {
     print(`${e.type}: ${e.key}: ${e.which}`)
-    this.keyDownCode = e.which
     const currentLine = this.rawStr.parentElement
-    if (e.which === 8) { // バックスペース入力
+    this.keyStatus[e.which] = true
+    if (this.keyStatus[9] && this.keyStatus[16]) { // tab + shift
+      print('tab + shift')
+      this.unindent()
+    } else if (this.keyStatus[17] && this.keyStatus[37]) { // ctrl + ←
+      print('ctrl + ←')
+      this.unindent()
+    } else if (this.keyStatus[17] && this.keyStatus[39]) { // ctrl + →
+      print('ctrl + →')
+      this.indent()
+    } else if (e.which === 8) { // バックスペース入力
       if (currentLine === this.lines.firstChild) {
         if (currentLine.firstChild !== this.rawStr) {
           currentLine.removeChild(this.rawStr.previousSibling)
@@ -94,7 +102,7 @@ export default class Editor extends HTMLElement {
     } else if (e.which === 9) { // tab入力
       if (currentLine.firstChild === this.rawStr
           || this.rawStr.previousElementSibling.className === 'indent') {
-        this.insertIndent()
+        this.indent()
       }
     } else if (e.which === 13) { // return入力
       this.cursor.input.value = '' // これいる？
@@ -103,7 +111,7 @@ export default class Editor extends HTMLElement {
     } else if (e.which === 32) { // スペースキー入力
       if (currentLine.firstChild === this.rawStr
         || this.rawStr.previousElementSibling.className === 'indent') {
-        this.insertIndent()
+        this.indent()
       }
     } else if (e.which === 37) { // 左入力
       const prevChar = this.rawStr.previousSibling
@@ -162,7 +170,8 @@ export default class Editor extends HTMLElement {
     // print(`${e.type}: ${e.key}: ${e.which}`)
   }
 
-  private keyUp(e): void {
+  private keyUp(e: KeyboardEvent): void {
+    this.keyStatus[e.which] = false
     // print(`${e.type}: ${e.key}: ${e.which}`)
   }
 
@@ -196,13 +205,22 @@ export default class Editor extends HTMLElement {
     this.drawCursor()
   }
 
-  private insertIndent(): void {
+  private indent(): void {
     const currentLine = this.rawStr.parentElement
     const indent: HTMLSpanElement = document.createElement('pre')
     indent.className = 'indent'
     indent.textContent = getIndent(indentSetting)
-    currentLine.insertBefore(indent, this.rawStr)
+    currentLine.insertBefore(indent, currentLine.firstChild)
     this.drawCursor()
+  }
+
+  private unindent(): void {
+    const currentLine = this.rawStr.parentElement
+    const firstChild = currentLine.firstElementChild
+    if (firstChild.className === 'indent') {
+      currentLine.removeChild(firstChild)
+      this.drawCursor()
+    }
   }
 
   /**
