@@ -5,6 +5,24 @@ import { v4 } from 'uuid'
 
 const print = console.log
 
+interface IeditorSetting {
+  indentIsSpaces: boolean,
+  indentSize: number
+}
+
+function getIndent(setting: IeditorSetting): string {
+  if (setting.indentIsSpaces) {
+    return ' '.repeat(setting.indentSize)
+  } else {
+    return '\t'.repeat(setting.indentSize)
+  }
+}
+
+const indentSetting: IeditorSetting = {
+  indentIsSpaces: true,
+  indentSize: 2
+}
+
 export default class Editor extends HTMLElement {
   private lines: HTMLDivElement
   private shadow: ShadowRoot
@@ -27,7 +45,7 @@ export default class Editor extends HTMLElement {
     this.cursor.input.onkeydown = (e) => this.keyDown(e)
     this.cursor.input.onkeypress = (e) => this.keyPress(e)
     this.cursor.input.onkeyup = (e) => this.keyUp(e)
-    this.cursor.input.addEventListener('compositionend', (e) => this.writeToLine(e))
+    this.cursor.input.addEventListener('compositionend', (e) => this.writeToLine())
     this.shadow.appendChild(this.cursor)
 
     // 入力された文字列の幅を取得するためのspan
@@ -51,8 +69,8 @@ export default class Editor extends HTMLElement {
     }
   }
 
-  private keyDown(e): void {
-    // print(`${e.type}: ${e.key}: ${e.which}`)
+  private keyDown(e: KeyboardEvent): void {
+    print(`${e.type}: ${e.key}: ${e.which}`)
     this.keyDownCode = e.which
     const currentLine = this.rawStr.parentElement
     if (e.which === 8) { // バックスペース入力
@@ -73,10 +91,20 @@ export default class Editor extends HTMLElement {
         }
       }
       this.drawCursor()
+    } else if (e.which === 9) { // tab入力
+      if (currentLine.firstChild === this.rawStr
+          || this.rawStr.previousElementSibling.className === 'indent') {
+        this.insertIndent()
+      }
     } else if (e.which === 13) { // return入力
       this.cursor.input.value = '' // これいる？
       this.insertNewLine(this.makeNewLine())
       this.drawCursor()
+    } else if (e.which === 32) { // スペースキー入力
+      if (currentLine.firstChild === this.rawStr
+        || this.rawStr.previousElementSibling.className === 'indent') {
+        this.insertIndent()
+      }
     } else if (e.which === 37) { // 左入力
       const prevChar = this.rawStr.previousSibling
       if (prevChar) {
@@ -140,10 +168,27 @@ export default class Editor extends HTMLElement {
 
   private onInput(e): void {
     // print(`${e.type}: ${e.inputType}: ${e.dataTransfer}: ${e.data}: ${e.isComposing}`)
+    if (this.rawStr.parentElement.firstChild === this.rawStr
+      || this.rawStr.previousElementSibling.className === 'indent') {
+      if (e.data === ' '
+      || e.data === '\u3000') {
+        this.cursor.resetValue()
+      }
+    }
+    if (e.data === '\u3000') {
+      this.writeToLine() // 下のresizeInputが二重になってるのでreturnを入れた
+      return
+    }
     this.resizeInput()
   }
 
-  private writeToLine(e): void {
+  private onClick(e): void {
+    // this.putCursor(e.x, e.y)
+    this.insertRawStr(e.x, e.y)
+    this.drawCursor()
+  }
+
+  private writeToLine(): void {
     // print(e.type)
     this.inputTextToLine()
     this.cursor.resetValue() // valueを初期化
@@ -151,9 +196,12 @@ export default class Editor extends HTMLElement {
     this.drawCursor()
   }
 
-  private onClick(e): void {
-    // this.putCursor(e.x, e.y)
-    this.insertRawStr(e.x, e.y)
+  private insertIndent(): void {
+    const currentLine = this.rawStr.parentElement
+    const indent: HTMLSpanElement = document.createElement('pre')
+    indent.className = 'indent'
+    indent.textContent = getIndent(indentSetting)
+    currentLine.insertBefore(indent, this.rawStr)
     this.drawCursor()
   }
 
@@ -224,9 +272,11 @@ export default class Editor extends HTMLElement {
   /** クリックされた位置にspan.rawStringを挿入し、カーソルの移動位置が文字の上に重ならないように配置する */
   private insertRawStr(x: number, y: number): void {
     const clickedElem = this.shadow.elementFromPoint(x, y)
+    print(clickedElem.className)
     const objL: number = clickedElem.getBoundingClientRect().left
     const objR: number = clickedElem.getBoundingClientRect().right
-    if (clickedElem.className === 'char') {
+    if (clickedElem.className === 'char'
+        || clickedElem.className === 'indent') {
       const diffL = x - objL
       const diffR = objR - x
       if (diffR <= diffL) {

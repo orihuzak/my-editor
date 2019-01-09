@@ -11,7 +11,19 @@
 }
 
 .char {
-  height: 18px;
+  display: inline-block;
+  white-space: pre;
+  /* height: inherit; */
+  /* background-color: aqua; */
+}
+
+.indent {
+  display: inline-block;
+  height: inherit;
+  width: 1.5em;
+  margin: 0;
+  padding: 0;
+  /* background-color: red; */
 }
 
 my-cursor {
