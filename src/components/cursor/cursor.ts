@@ -19,6 +19,9 @@ export default class Cursor extends HTMLElement {
     this.input.wrap = 'soft'
     this.input.rows = 1
     this.input.autofocus = true // ページロードされた時にフォーカスを当てるかどうか
+    this.input.onblur = (e: FocusEvent) => {
+      this.style.display = 'none'
+    }
 
     // スタイルを追加
     const style = document.createElement('style')

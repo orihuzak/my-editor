@@ -23,12 +23,22 @@ const indentSetting: IeditorSetting = {
   indentSize: 2
 }
 
+enum Key {
+  tab = 'Tab',
+  delete = 'Backspace',
+  enter = 'Enter',
+  space = ' ',
+  left = 'ArrowLeft',
+  right = 'ArrowRight',
+  up = 'ArrowUp',
+  down = 'ArrowDown',
+}
+
 export default class Editor extends HTMLElement {
   private lines: HTMLDivElement
   private shadow: ShadowRoot
   private cursor: Cursor
   private rawStr: HTMLSpanElement // 入力された生の文字列の幅を取得するためのspan
-  private keyStatus: {[n: number]: boolean} = {}
   constructor() {
     super()
     // コンストラクターの中でシャドウルートをつくる必要があるらしい
@@ -44,7 +54,9 @@ export default class Editor extends HTMLElement {
     this.cursor.input.onkeydown = (e) => this.keyDown(e)
     this.cursor.input.onkeypress = (e) => this.keyPress(e)
     this.cursor.input.onkeyup = (e) => this.keyUp(e)
-    this.cursor.input.addEventListener('compositionend', (e) => this.writeToLine())
+    this.cursor.input.addEventListener('compositionend',
+                                        (e) => this.writeToLine())
+
     this.shadow.appendChild(this.cursor)
 
     // 入力された文字列の幅を取得するためのspan
@@ -68,102 +80,67 @@ export default class Editor extends HTMLElement {
     }
   }
 
-  private keyDown(e: KeyboardEvent): void {
-    print(`${e.type}: ${e.key}: ${e.which}`)
+  private keyDown(e): void {
+    if (e.defaultPrevented) { return }
     const currentLine = this.rawStr.parentElement
-    this.keyStatus[e.which] = true
-    if (this.keyStatus[9] && this.keyStatus[16]) { // tab + shift
-      print('tab + shift')
-      this.unindent()
-    } else if (this.keyStatus[17] && this.keyStatus[37]) { // ctrl + ←
-      print('ctrl + ←')
-      this.unindent()
-    } else if (this.keyStatus[17] && this.keyStatus[39]) { // ctrl + →
-      print('ctrl + →')
-      this.indent()
-    } else if (e.which === 8) { // バックスペース入力
-      if (currentLine === this.lines.firstChild) {
-        if (currentLine.firstChild !== this.rawStr) {
-          currentLine.removeChild(this.rawStr.previousSibling)
-        }
-      } else {
-        if (currentLine.firstChild === this.rawStr) {
-          const children = [...currentLine.children]
-          const prevLine = currentLine.previousSibling
-          for (const child of children) {
-            prevLine.appendChild(child)
+    print(`${e.type}: ${e.key}`)
+    if (!e.isComposing) { // IME入力中は発動しない
+      switch (e.key) {
+        case 'Tab': {
+          if (e.shiftKey) {
+            this.unindent()
+          } else if (currentLine.firstChild === this.rawStr
+            || this.rawStr.previousElementSibling.className === 'indent') {
+            this.indent()
           }
-          this.lines.removeChild(currentLine)
-        } else {
-          currentLine.removeChild(this.rawStr.previousSibling)
+          break
+        } case 'Backspace': {
+          this.deleteLeft()
+          break
+        } case 'Enter': {
+          this.insertNewLine()
+          break
+        } case ' ': {
+          if (currentLine.firstChild === this.rawStr
+            || this.rawStr.previousElementSibling.className === 'indent') {
+            this.indent()
+          }
+        } case 'ArrowLeft': {
+          if (e.ctrlKey) {
+            this.unindent()
+          } else if (e.metaKey) {
+            this.moveToLineStart()
+          } else { // 左入力のみ
+            this.cursorLeft()
+          }
+          break
+        } case 'ArrowRight': {
+          if (e.ctrlKey) {
+            this.indent()
+          } else if (e.metaKey) {
+            this.moveToLineEnd()
+          } else {
+            this.cursorRight()
+          }
+          break
+        } case 'ArrowUp': {
+          if (e.metaKey) {
+            this.moveToPageStart()
+          } else {
+            this.cursorUp()
+          }
+          break
+        } case 'ArrowDown': {
+          if (e.metaKey) {
+            this.moveToPageEnd()
+          } else {
+            this.cursorDown()
+          }
+          break
         }
       }
-      this.drawCursor()
-    } else if (e.which === 9) { // tab入力
-      if (currentLine.firstChild === this.rawStr
-          || this.rawStr.previousElementSibling.className === 'indent') {
-        this.indent()
-      }
-    } else if (e.which === 13) { // return入力
-      this.cursor.input.value = '' // これいる？
-      this.insertNewLine(this.makeNewLine())
-      this.drawCursor()
-    } else if (e.which === 32) { // スペースキー入力
-      if (currentLine.firstChild === this.rawStr
-        || this.rawStr.previousElementSibling.className === 'indent') {
-        this.indent()
-      }
-    } else if (e.which === 37) { // 左入力
-      const prevChar = this.rawStr.previousSibling
-      if (prevChar) {
-        currentLine.insertBefore(this.rawStr, prevChar)
-      } else {
-        const prevLine = currentLine.previousSibling
-        if (prevLine) {
-          prevLine.appendChild(this.rawStr)
-        }
-      }
-      this.drawCursor()
-    } else if (e.which === 38) { // 上入力
-      const prevLine = currentLine.previousElementSibling
-      if (prevLine) {
-        const prevChildren = [...prevLine.children]
-        if (prevChildren) {
-          const index = [...currentLine.children].indexOf(this.rawStr)
-          const target = prevChildren[index]
-          prevLine.insertBefore(this.rawStr, target)
-        } else {
-          prevLine.appendChild(this.rawStr)
-        }
-      }
-      this.drawCursor()
-    } else if (e.which === 39) { // 右入力
-      const nextChar = this.rawStr.nextSibling
-      if (nextChar) {
-        currentLine.insertBefore(this.rawStr, nextChar.nextSibling)
-      } else {
-        const nextLine = currentLine.nextSibling
-        if (nextLine) {
-          nextLine.insertBefore(this.rawStr, nextLine.firstChild)
-        }
-      }
-      this.drawCursor()
-    } else if (e.which === 40) { // 下入力
-      const nextLine = currentLine.nextElementSibling
-      if (nextLine) {
-        const nextChildren = [...nextLine.children]
-        if (nextChildren) {
-          const index = [...currentLine.children].indexOf(this.rawStr)
-          const target = nextChildren[index]
-          nextLine.insertBefore(this.rawStr, target)
-        } else {
-          nextLine.appendChild(this.rawStr)
-        }
-      } else {
-        currentLine.appendChild(this.rawStr)
-      }
-      this.drawCursor()
     }
+    e.preventDefault()
   }
 
   private keyPress(e): void {
@@ -171,16 +148,14 @@ export default class Editor extends HTMLElement {
   }
 
   private keyUp(e: KeyboardEvent): void {
-    this.keyStatus[e.which] = false
-    // print(`${e.type}: ${e.key}: ${e.which}`)
+    print(`${e.type}: ${e.key}`)
   }
 
   private onInput(e): void {
     // print(`${e.type}: ${e.inputType}: ${e.dataTransfer}: ${e.data}: ${e.isComposing}`)
     if (this.rawStr.parentElement.firstChild === this.rawStr
-      || this.rawStr.previousElementSibling.className === 'indent') {
-      if (e.data === ' '
-      || e.data === '\u3000') {
+        || this.rawStr.previousElementSibling.className === 'indent') {
+      if (e.data === ' ' || e.data === '\u3000') {
         this.cursor.resetValue()
       }
     }
@@ -192,8 +167,10 @@ export default class Editor extends HTMLElement {
   }
 
   private onClick(e): void {
-    // this.putCursor(e.x, e.y)
     this.insertRawStr(e.x, e.y)
+    if (this.cursor.style.display === 'none') {
+      this.cursor.style.display = 'inline-block'
+    }
     this.drawCursor()
   }
 
@@ -202,6 +179,89 @@ export default class Editor extends HTMLElement {
     this.inputTextToLine()
     this.cursor.resetValue() // valueを初期化
     this.resizeInput()
+    this.drawCursor()
+  }
+
+  private cursorLeft(): void {
+    const currentLine = this.rawStr.parentElement
+    const prevChar = this.rawStr.previousSibling
+    if (prevChar) {
+      currentLine.insertBefore(this.rawStr, prevChar)
+    } else {
+      const prevLine = currentLine.previousSibling
+      if (prevLine) {
+        prevLine.appendChild(this.rawStr)
+      }
+    }
+    this.drawCursor()
+  }
+
+  private cursorRight(): void {
+    const currentLine = this.rawStr.parentElement
+    const nextChar = this.rawStr.nextSibling
+    if (nextChar) {
+      currentLine.insertBefore(this.rawStr, nextChar.nextSibling)
+    } else {
+      const nextLine = currentLine.nextSibling
+      if (nextLine) {
+        nextLine.insertBefore(this.rawStr, nextLine.firstChild)
+      }
+    }
+    this.drawCursor()
+  }
+
+  private cursorUp(): void {
+    const currentLine = this.rawStr.parentElement
+    const prevLine = currentLine.previousElementSibling
+    if (prevLine) {
+      const prevChildren = [...prevLine.children]
+      if (prevChildren) {
+        const index = [...currentLine.children].indexOf(this.rawStr)
+        const target = prevChildren[index]
+        prevLine.insertBefore(this.rawStr, target)
+      } else {
+        prevLine.appendChild(this.rawStr)
+      }
+    }
+    this.drawCursor()
+  }
+
+  private cursorDown(): void {
+    const currentLine = this.rawStr
+    const nextLine = currentLine.nextElementSibling
+    if (nextLine) {
+      const nextChildren = [...nextLine.children]
+      if (nextChildren) {
+        const index = [...currentLine.children].indexOf(this.rawStr)
+        const target = nextChildren[index]
+        nextLine.insertBefore(this.rawStr, target)
+      } else {
+        nextLine.appendChild(this.rawStr)
+      }
+    } else {
+      currentLine.appendChild(this.rawStr)
+    }
+    this.drawCursor()
+  }
+
+  private deleteLeft(): void {
+    const currentLine = this.rawStr.parentElement
+    if (currentLine === this.lines.firstChild) {
+      if (currentLine.firstChild !== this.rawStr) {
+        currentLine.removeChild(this.rawStr.previousSibling)
+      }
+    } else {
+      if (currentLine.firstChild === this.rawStr) {
+        const children = [...currentLine.children]
+        const prevLine = currentLine.previousSibling
+        for (const child of children) {
+          prevLine.appendChild(child)
+        }
+        this.lines.removeChild(currentLine)
+      } else {
+        currentLine.removeChild(this.rawStr.previousSibling)
+      }
+    }
     this.drawCursor()
   }
 
@@ -219,6 +279,38 @@ export default class Editor extends HTMLElement {
     const firstChild = currentLine.firstElementChild
     if (firstChild.className === 'indent') {
       currentLine.removeChild(firstChild)
+      this.drawCursor()
+    }
+  }
+
+  private moveToPageStart(): void {
+    const firstLine = this.lines.firstChild
+    if (firstLine.firstChild !== this.rawStr) {
+      firstLine.insertBefore(this.rawStr, firstLine.firstChild)
+      this.drawCursor()
+    }
+  }
+
+  private moveToPageEnd(): void {
+    const lastLine = this.lines.lastChild
+    if (lastLine.lastChild !== this.rawStr) {
+      lastLine.appendChild(this.rawStr)
+      this.drawCursor()
+    }
+  }
+
+  private moveToLineStart(): void {
+    const currentLine = this.rawStr.parentElement
+    if (currentLine.firstChild !== this.rawStr) {
+      currentLine.insertBefore(this.rawStr, currentLine.firstChild)
+      this.drawCursor()
+    }
+  }
+
+  private moveToLineEnd(): void {
+    const currentLine = this.rawStr.parentElement
+    if (currentLine.lastChild !== this.rawStr) {
+      currentLine.appendChild(this.rawStr)
       this.drawCursor()
     }
   }
@@ -256,7 +348,8 @@ export default class Editor extends HTMLElement {
   }
 
   /** 新しいlineを現在カーソルがある行の次の要素として挿入しつつ、カーソルより後にあるspan.charを全て新しい行に挿入する */
-  private insertNewLine(newLine: HTMLDivElement): void {
+  private insertNewLine(): void {
+    const newLine = this.makeNewLine()
     const currentLine = this.rawStr.parentElement
     const bros = [...currentLine.children]
     const index = bros.indexOf(this.rawStr)
@@ -265,6 +358,7 @@ export default class Editor extends HTMLElement {
       newLine.appendChild(child)
     }
     this.lines.insertBefore(newLine, currentLine.nextSibling)
+    this.drawCursor()
   }
 
   private makeNewLine(): HTMLDivElement {
@@ -290,7 +384,7 @@ export default class Editor extends HTMLElement {
   /** クリックされた位置にspan.rawStringを挿入し、カーソルの移動位置が文字の上に重ならないように配置する */
   private insertRawStr(x: number, y: number): void {
     const clickedElem = this.shadow.elementFromPoint(x, y)
-    print(clickedElem.className)
+    // print(clickedElem.className)
     const objL: number = clickedElem.getBoundingClientRect().left
     const objR: number = clickedElem.getBoundingClientRect().right
     if (clickedElem.className === 'char'
