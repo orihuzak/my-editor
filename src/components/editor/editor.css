@@ -17,12 +17,13 @@
   /* background-color: aqua; */
 }
 
-.indent {
+.space {
   display: inline-block;
   height: inherit;
   width: 1.5em;
   margin: 0;
   padding: 0;
+  pointer-events: none; /* クリックを透過する */
   /* background-color: red; */
 }
 

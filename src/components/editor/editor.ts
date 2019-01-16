@@ -71,11 +71,12 @@ export default class Editor extends HTMLElement {
 
     // 最初の行を追加
     const newLine = this.makeNewLine()
-    newLine.appendChild(this.rawStr)
     this.lines.appendChild(newLine)
 
     // 画面読み込み時の処理
     window.onload = () => {
+      const text = this.lines.firstElementChild.getElementsByClassName('text')[0]
+      text.insertBefore(this.rawStr, text.firstChild)
       this.drawCursor()
     }
   }
@@ -88,14 +89,16 @@ export default class Editor extends HTMLElement {
       switch (e.key) {
         case 'Tab': {
           if (e.shiftKey) {
-            this.unindent()
+            if (this.canUnindent()) {
+              this.unindent()
+            }
           } else if (currentLine.firstChild === this.rawStr
             || this.rawStr.previousElementSibling.className === 'indent') {
             this.indent()
           }
           break
         } case 'Backspace': {
-          this.deleteLeft()
+          this.onDeleteKey()
           break
         } case 'Enter': {
           this.insertNewLine()
@@ -156,10 +159,10 @@ export default class Editor extends HTMLElement {
     if (this.rawStr.parentElement.firstChild === this.rawStr
         || this.rawStr.previousElementSibling.className === 'indent') {
       if (e.data === ' ' || e.data === '\u3000') {
+        // 行の先頭に半角/全角スペースが入らないようにする措置
         this.cursor.resetValue()
       }
-    }
-    if (e.data === '\u3000') {
+    } else if (e.data === '\u3000') {
       this.writeToLine() // 下のresizeInputが二重になってるのでreturnを入れた
       return
     }
@@ -167,7 +170,7 @@ export default class Editor extends HTMLElement {
   }
 
   private onClick(e): void {
-    this.insertRawStr(e.x, e.y)
+    this.insertRawStr(e)
     if (this.cursor.style.display === 'none') {
       this.cursor.style.display = 'inline-block'
     }
@@ -176,7 +179,7 @@ export default class Editor extends HTMLElement {
 
   private writeToLine(): void {
     // print(e.type)
-    this.inputTextToLine()
+    this.insertTextToLine()
     this.cursor.resetValue() // valueを初期化
     this.resizeInput()
     this.drawCursor()
@@ -244,43 +247,55 @@ export default class Editor extends HTMLElement {
     this.drawCursor()
   }
 
-  private deleteLeft(): void {
-    const currentLine = this.rawStr.parentElement
-    if (currentLine === this.lines.firstChild) {
-      if (currentLine.firstChild !== this.rawStr) {
-        currentLine.removeChild(this.rawStr.previousSibling)
-      }
+  private onDeleteKey() {
+    const text = this.rawStr.parentElement
+    if (this.rawStr.previousSibling) {
+      this.deleteLeft()
     } else {
-      if (currentLine.firstChild === this.rawStr) {
-        const children = [...currentLine.children]
-        const prevLine = currentLine.previousSibling
-        for (const child of children) {
-          prevLine.appendChild(child)
-        }
-        this.lines.removeChild(currentLine)
+      if (this.canUnindent()) {
+        this.unindent()
       } else {
-        currentLine.removeChild(this.rawStr.previousSibling)
+        const currentLine = text.parentElement
+        if (currentLine !== this.lines.firstChild) {
+          const children = [...text.children]
+          const prevLine = currentLine.previousElementSibling
+          const prevText = prevLine.getElementsByClassName('text')[0]
+          for (const child of children) {
+            prevText.appendChild(child)
+          }
+          this.lines.removeChild(currentLine)
+          this.drawCursor()
+        }
       }
     }
+  }
+
+  /** 左の文字を削除 */
+  private deleteLeft(): void {
+    const text = this.rawStr.parentElement
+    text.removeChild(this.rawStr.previousSibling)
     this.drawCursor()
   }
 
   private indent(): void {
-    const currentLine = this.rawStr.parentElement
-    const indent: HTMLSpanElement = document.createElement('pre')
-    indent.className = 'indent'
-    indent.textContent = getIndent(indentSetting)
-    currentLine.insertBefore(indent, currentLine.firstChild)
+    const indent = this.rawStr.parentElement.previousSibling
+    const space: HTMLSpanElement = document.createElement('pre')
+    space.className = 'space'
+    space.innerText = ' '
+    indent.insertBefore(space, indent.firstChild)
     this.drawCursor()
   }
 
+  /** unindentできるかどうかbooleanで返すメソッド（実はindentの数で判定しているだけ） */
+  private canUnindent(): boolean {
+    const numOfIndents = this.rawStr.parentElement.previousSibling.childNodes.length
+    return numOfIndents > 0 ? true : false
+  }
+
   private unindent(): void {
-    const currentLine = this.rawStr.parentElement
-    const firstChild = currentLine.firstElementChild
-    if (firstChild.className === 'indent') {
-      currentLine.removeChild(firstChild)
-      this.drawCursor()
-    }
+    const indent = this.rawStr.parentElement.previousElementSibling
+    indent.removeChild(indent.firstChild)
+    this.drawCursor()
   }
 
   private moveToPageStart(): void {
@@ -316,26 +331,26 @@ export default class Editor extends HTMLElement {
   }
 
   /**
-   * 現在のlineに入力が決定した文字列を1文字ずつ分割したspan要素にして入れる
+   * 現在のlineのtext部に入力が決定した文字列を1文字ずつ分割したspan要素にして入れる
    */
-  private inputTextToLine() {
+  private insertTextToLine(): void {
     const chars = [...this.cursor.getValueExcludedReturnCodes()]
     const lastIndex = chars.length - 1
-    const currentLine = this.rawStr.parentElement
+    const currentTextPart = this.rawStr.parentElement
     const nextChar = this.rawStr.nextSibling
     for (const [i, char] of chars.entries()) {
       const span = document.createElement('span')
       span.className = 'char'
       span.innerText = char
       if (nextChar) {
-        currentLine.insertBefore(span, nextChar)
+        currentTextPart.insertBefore(span, nextChar)
         if (i === lastIndex) {
-          currentLine.insertBefore(this.rawStr, nextChar)
+          currentTextPart.insertBefore(this.rawStr, nextChar)
         }
       } else {
-        currentLine.appendChild(span)
+        currentTextPart.appendChild(span)
         if (i === lastIndex) {
-          currentLine.appendChild(this.rawStr)
+          currentTextPart.appendChild(this.rawStr)
         }
       }
     }
@@ -350,14 +365,21 @@ export default class Editor extends HTMLElement {
   /** 新しいlineを現在カーソルがある行の次の要素として挿入しつつ、カーソルより後にあるspan.charを全て新しい行に挿入する */
   private insertNewLine(): void {
     const newLine = this.makeNewLine()
-    const currentLine = this.rawStr.parentElement
-    const bros = [...currentLine.children]
-    const index = bros.indexOf(this.rawStr)
-    const newChildren = bros.slice(index)
+    const currentLine = this.rawStr.parentElement.parentElement
+    const text = this.rawStr.parentElement
+    const chars = [...text.children]
+    const index = chars.indexOf(this.rawStr)
+    const newChildren = chars.slice(index)
+    const newText = newLine.getElementsByClassName('text')[0]
     for (const child of newChildren) {
-      newLine.appendChild(child)
+      newText.appendChild(child)
     }
     this.lines.insertBefore(newLine, currentLine.nextSibling)
+    const indent = text.previousSibling
+    for (const child of indent.childNodes) {
+      this.indent()
+    }
+
     this.drawCursor()
   }
 
@@ -378,26 +400,35 @@ export default class Editor extends HTMLElement {
       }
     } while (bool)
     newLine.setAttribute('id', uuid)
+    // lineにindent部とtext部を追加
+    const indent = document.createElement('span')
+    indent.className = 'indent'
+    const text = document.createElement('span')
+    text.className = 'text'
+    newLine.appendChild(indent)
+    newLine.appendChild(text)
     return newLine
   }
 
-  /** クリックされた位置にspan.rawStringを挿入し、カーソルの移動位置が文字の上に重ならないように配置する */
-  private insertRawStr(x: number, y: number): void {
-    const clickedElem = this.shadow.elementFromPoint(x, y)
-    // print(clickedElem.className)
+  /** クリックされた位置にspan.rawStrを挿入し、カーソルの移動位置が文字の上に重ならないように配置する */
+  private insertRawStr(e): void {
+    const clickedElem = this.shadow.elementFromPoint(e.x, e.y)
     const objL: number = clickedElem.getBoundingClientRect().left
     const objR: number = clickedElem.getBoundingClientRect().right
-    if (clickedElem.className === 'char'
-        || clickedElem.className === 'indent') {
-      const diffL = x - objL
-      const diffR = objR - x
+    if (clickedElem.className === 'char') {
+      const diffL = e.x - objL
+      const diffR = objR - e.x
       if (diffR <= diffL) {
         clickedElem.parentNode.insertBefore(this.rawStr, clickedElem.nextSibling) // rawStrを追加
       } else {
         clickedElem.parentNode.insertBefore(this.rawStr, clickedElem) // rawStrを追加
       }
+    } else if (clickedElem.className === 'indent') {
+      const text = clickedElem.nextSibling
+      text.insertBefore(this.rawStr, text.firstChild)
     } else if (clickedElem.className === 'line') {
-      clickedElem.appendChild(this.rawStr) // rawStrを挿入
+      const text = clickedElem.getElementsByClassName('text')[0]
+      text.appendChild(this.rawStr) // rawStrを挿入
     }
   }
 
