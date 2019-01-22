@@ -232,7 +232,7 @@ export default class Editor extends HTMLElement {
         preText.appendChild(this.rawStr)
       }
     } else {
-      // this.moveToLineStart()
+      this.moveToLineStart()
     }
     this.drawCursor()
   }
@@ -252,7 +252,7 @@ export default class Editor extends HTMLElement {
         nextText.appendChild(this.rawStr)
       }
     } else {
-      // this.moveToLineEnd()
+      this.moveToLineEnd()
     }
     this.drawCursor()
   }
@@ -325,17 +325,17 @@ export default class Editor extends HTMLElement {
   }
 
   private moveToLineStart(): void {
-    const currentLine = this.rawStr.parentElement
-    if (currentLine.firstChild !== this.rawStr) {
-      currentLine.insertBefore(this.rawStr, currentLine.firstChild)
+    const curText = this.rawStr.parentNode
+    if (curText.firstChild !== this.rawStr) {
+      curText.insertBefore(this.rawStr, curText.firstChild)
       this.drawCursor()
     }
   }
 
   private moveToLineEnd(): void {
-    const currentLine = this.rawStr.parentElement
-    if (currentLine.lastChild !== this.rawStr) {
-      currentLine.appendChild(this.rawStr)
+    const curText = this.rawStr.parentNode
+    if (curText.lastChild !== this.rawStr) {
+      curText.appendChild(this.rawStr)
       this.drawCursor()
     }
   }
