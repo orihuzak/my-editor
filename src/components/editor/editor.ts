@@ -185,64 +185,74 @@ export default class Editor extends HTMLElement {
     this.drawCursor()
   }
 
+  /** カーソルを左に動かす */
   private cursorLeft(): void {
-    const currentLine = this.rawStr.parentElement
+    const text = this.rawStr.parentNode
     const prevChar = this.rawStr.previousSibling
     if (prevChar) {
-      currentLine.insertBefore(this.rawStr, prevChar)
+      text.insertBefore(this.rawStr, prevChar)
     } else {
-      const prevLine = currentLine.previousSibling
+      const prevLine = text.parentNode.previousSibling
       if (prevLine) {
-        prevLine.appendChild(this.rawStr)
+        prevLine.lastChild.appendChild(this.rawStr)
       }
     }
     this.drawCursor()
   }
 
+  /** カーソルを右に動かす */
   private cursorRight(): void {
-    const currentLine = this.rawStr.parentElement
+    const text = this.rawStr.parentNode
     const nextChar = this.rawStr.nextSibling
     if (nextChar) {
-      currentLine.insertBefore(this.rawStr, nextChar.nextSibling)
+      text.insertBefore(this.rawStr, nextChar.nextSibling)
     } else {
-      const nextLine = currentLine.nextSibling
+      const nextLine = text.parentNode.nextSibling
       if (nextLine) {
-        nextLine.insertBefore(this.rawStr, nextLine.firstChild)
+        const nextText = nextLine.lastChild
+        nextText.insertBefore(this.rawStr, nextText.firstChild)
       }
     }
     this.drawCursor()
   }
 
+  /** カーソルを上に動かします */
   private cursorUp(): void {
-    const currentLine = this.rawStr.parentElement
-    const prevLine = currentLine.previousElementSibling
-    if (prevLine) {
-      const prevChildren = [...prevLine.children]
-      if (prevChildren) {
-        const index = [...currentLine.children].indexOf(this.rawStr)
-        const target = prevChildren[index]
-        prevLine.insertBefore(this.rawStr, target)
+    const text = this.rawStr.parentNode
+    const curLine = text.parentNode
+    const preLine = curLine.previousSibling
+    if (preLine) {
+      const preText = preLine.lastChild
+      const preChars = preText.childNodes
+      if (preChars) {
+        const index = [...text.childNodes].indexOf(this.rawStr)
+        const tgt = preChars.item(index)
+        preText.insertBefore(this.rawStr, tgt)
       } else {
-        prevLine.appendChild(this.rawStr)
+        preText.appendChild(this.rawStr)
       }
+    } else {
+      // this.moveToLineStart()
     }
     this.drawCursor()
   }
 
   private cursorDown(): void {
-    const currentLine = this.rawStr
-    const nextLine = currentLine.nextElementSibling
+    const curText = this.rawStr.parentNode
+    const curLine = curText.parentNode
+    const nextLine = curLine.nextSibling
     if (nextLine) {
-      const nextChildren = [...nextLine.children]
-      if (nextChildren) {
-        const index = [...currentLine.children].indexOf(this.rawStr)
-        const target = nextChildren[index]
-        nextLine.insertBefore(this.rawStr, target)
+      const nextText = nextLine.lastChild
+      const nextChars = nextText.childNodes
+      if (nextChars) {
+        const curLoc = [...curText.childNodes].indexOf(this.rawStr)
+        const tgt = nextChars.item(curLoc)
+        nextText.insertBefore(this.rawStr, tgt)
       } else {
-        nextLine.appendChild(this.rawStr)
+        nextText.appendChild(this.rawStr)
       }
     } else {
-      currentLine.appendChild(this.rawStr)
+      // this.moveToLineEnd()
     }
     this.drawCursor()
   }
