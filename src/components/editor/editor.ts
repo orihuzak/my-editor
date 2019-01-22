@@ -310,16 +310,18 @@ export default class Editor extends HTMLElement {
 
   private moveToPageStart(): void {
     const firstLine = this.lines.firstChild
-    if (firstLine.firstChild !== this.rawStr) {
-      firstLine.insertBefore(this.rawStr, firstLine.firstChild)
+    const firstLineText = firstLine.lastChild
+    if (firstLineText.firstChild !== this.rawStr) {
+      firstLineText.insertBefore(this.rawStr, firstLineText.firstChild)
       this.drawCursor()
     }
   }
 
   private moveToPageEnd(): void {
     const lastLine = this.lines.lastChild
-    if (lastLine.lastChild !== this.rawStr) {
-      lastLine.appendChild(this.rawStr)
+    const lastLineText = lastLine.lastChild
+    if (lastLineText.lastChild !== this.rawStr) {
+      lastLineText.appendChild(this.rawStr)
       this.drawCursor()
     }
   }
