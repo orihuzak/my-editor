@@ -19,12 +19,20 @@
 
 .space {
   display: inline-block;
-  height: inherit;
   width: 1.5em;
+  height: inherit;
   margin: 0;
   padding: 0;
   pointer-events: none; /* クリックを透過する */
   /* background-color: red; */
+}
+
+.indent-mark {
+  display: inline-block;
+  vertical-align: middle;
+  width: 6px;
+  height: 3px;
+  background-color: #bbbbbb;
 }
 
 my-cursor {

@@ -83,7 +83,7 @@ export default class Editor extends HTMLElement {
 
   private keyDown(e): void {
     if (e.defaultPrevented) { return }
-    const currentLine = this.rawStr.parentElement
+    const curText = this.rawStr.parentNode
     print(`${e.type}: ${e.key}`)
     if (!e.isComposing) { // IME入力中は発動しない
       switch (e.key) {
@@ -92,8 +92,7 @@ export default class Editor extends HTMLElement {
             if (this.canUnindent()) {
               this.unindent()
             }
-          } else if (currentLine.firstChild === this.rawStr
-            || this.rawStr.previousElementSibling.className === 'indent') {
+          } else if (curText.firstChild === this.rawStr) {
             this.indent()
           }
           break
@@ -104,10 +103,10 @@ export default class Editor extends HTMLElement {
           this.insertNewLine()
           break
         } case ' ': {
-          if (currentLine.firstChild === this.rawStr
-            || this.rawStr.previousElementSibling.className === 'indent') {
+          if (curText.firstChild === this.rawStr) {
             this.indent()
           }
+          break
         } case 'ArrowLeft': {
           if (e.ctrlKey) {
             this.unindent()
@@ -138,6 +137,16 @@ export default class Editor extends HTMLElement {
             this.moveToPageEnd()
           } else {
             this.cursorDown()
+          }
+          break
+        } case 'a': {
+          if (e.ctrlKey) {
+            this.moveToLineStart()
+          }
+          break
+        } case 'e': {
+          if (e.ctrlKey) {
+            this.moveToLineEnd()
           }
           break
         }
@@ -289,16 +298,21 @@ export default class Editor extends HTMLElement {
 
   private indent(): void {
     const indent = this.rawStr.parentElement.previousSibling
-    const space: HTMLSpanElement = document.createElement('pre')
+    const space = document.createElement('pre')
     space.className = 'space'
     space.innerText = ' '
+    if (!indent.firstChild) {
+      const mark = document.createElement('span')
+      mark.className = 'indent-mark'
+      space.appendChild(mark)
+    }
     indent.insertBefore(space, indent.firstChild)
     this.drawCursor()
   }
 
   /** unindentできるかどうかbooleanで返すメソッド（実はindentの数で判定しているだけ） */
   private canUnindent(): boolean {
-    const numOfIndents = this.rawStr.parentElement.previousSibling.childNodes.length
+    const numOfIndents = this.rawStr.parentNode.previousSibling.childNodes.length
     return numOfIndents > 0 ? true : false
   }
 
@@ -308,6 +322,7 @@ export default class Editor extends HTMLElement {
     this.drawCursor()
   }
 
+  /** ページ頭へ移動 */
   private moveToPageStart(): void {
     const firstLine = this.lines.firstChild
     const firstLineText = firstLine.lastChild
@@ -317,6 +332,7 @@ export default class Editor extends HTMLElement {
     }
   }
 
+  /** ページ末へ移動 */
   private moveToPageEnd(): void {
     const lastLine = this.lines.lastChild
     const lastLineText = lastLine.lastChild
