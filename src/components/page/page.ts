@@ -1,4 +1,3 @@
-const css = require('./page.css').toString()
 import Editor from 'components/editor/editor'
 
 export default class Page extends HTMLElement {
@@ -8,19 +7,10 @@ export default class Page extends HTMLElement {
   constructor() {
     super()
     this.shadow = this.attachShadow({ mode: 'open' })
-    this.root = document.createElement('div')
-    this.root.className = 'page'
     this.editor = new Editor()
 
-    this.root.appendChild(this.editor)
-
-    // スタイル
-    const style = document.createElement('style')
-    style.textContent = css
-    this.shadow.appendChild(style)
-
     // ルートを追加
-    this.shadow.appendChild(this.root)
+    this.shadow.appendChild(this.editor)
   }
 }
 

@@ -1,7 +1,7 @@
 .rod {
   display: inline-block;
   border-left: 1px solid #000;
-  height: 18px;
+  height: inherit;
 }
 
 .input {
@@ -12,7 +12,7 @@
   display: inline-block;
   line-height: 100%;
   width: 0;
-  height: 18px;
+  height: inherit;
   border: 0;
   padding: 0;
   font: inherit;
@@ -21,7 +21,6 @@
   /* background: transparent; */
   /* cursor: text; */
   /* カーソルを非表示にするcss
-  color : transparent;
   text-shadow : 0 0 0 #000;
   */ 
 }

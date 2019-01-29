@@ -5,24 +5,6 @@ import { v4 } from 'uuid'
 
 const print = console.log
 
-interface IeditorSetting {
-  indentIsSpaces: boolean,
-  indentSize: number
-}
-
-function getIndent(setting: IeditorSetting): string {
-  if (setting.indentIsSpaces) {
-    return ' '.repeat(setting.indentSize)
-  } else {
-    return '\t'.repeat(setting.indentSize)
-  }
-}
-
-const indentSetting: IeditorSetting = {
-  indentIsSpaces: true,
-  indentSize: 2
-}
-
 enum Key {
   tab = 'Tab',
   delete = 'Backspace',
@@ -89,9 +71,7 @@ export default class Editor extends HTMLElement {
       switch (e.key) {
         case 'Tab': {
           if (e.shiftKey) {
-            if (this.canUnindent()) {
-              this.unindent()
-            }
+            this.unindent()
           } else if (curText.firstChild === this.rawStr) {
             this.indent()
           }
@@ -271,7 +251,7 @@ export default class Editor extends HTMLElement {
     if (this.rawStr.previousSibling) {
       this.deleteLeft()
     } else {
-      if (this.canUnindent()) {
+      if (text.previousSibling.firstChild) {
         this.unindent()
       } else {
         const currentLine = text.parentElement
@@ -298,7 +278,7 @@ export default class Editor extends HTMLElement {
 
   private indent(): void {
     const indent = this.rawStr.parentElement.previousSibling
-    const space = document.createElement('pre')
+    const space = document.createElement('span')
     space.className = 'space'
     space.innerText = ' '
     if (!indent.firstChild) {
@@ -310,16 +290,13 @@ export default class Editor extends HTMLElement {
     this.drawCursor()
   }
 
-  /** unindentできるかどうかbooleanで返すメソッド（実はindentの数で判定しているだけ） */
-  private canUnindent(): boolean {
-    const numOfIndents = this.rawStr.parentNode.previousSibling.childNodes.length
-    return numOfIndents > 0 ? true : false
-  }
-
+  /** インデント部に子要素があればアンインデント */
   private unindent(): void {
-    const indent = this.rawStr.parentElement.previousElementSibling
-    indent.removeChild(indent.firstChild)
-    this.drawCursor()
+    const indent = this.rawStr.parentNode.previousSibling
+    if (indent.firstChild) {
+      indent.removeChild(indent.firstChild)
+      this.drawCursor()
+    }
   }
 
   /** ページ頭へ移動 */

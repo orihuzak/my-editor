@@ -9,7 +9,6 @@ export default class Cursor extends HTMLElement {
   constructor() {
     super()
     this.shadow = this.attachShadow({ mode: 'open' })
-    this.className = 'cursor'
 
     // パーツを生成
     this.rod = document.createElement('div')

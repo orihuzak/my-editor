@@ -1,0 +1,11 @@
+body {
+  font-size: 1em;
+}
+
+my-page {
+  display: block;
+  width: auto;
+  height: auto;
+  padding: 1em;
+  box-shadow: 0 3px 5px darkgrey;
+}

@@ -4,37 +4,53 @@
 }
 
 .line {
+  display: flex;
+  justify-content: flex-start;
   width: 100%;
-  height: 18px;
-  /* background-color: lightblue; */
+  height: 1em;
+  background-color: lightblue;
   border-bottom: 1px dotted gray;
+  vertical-align: top;
+}
+
+.indent {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.text {
+  display: flex;
+  justify-content: flex-start;
+  flex-wrap: wrap;
 }
 
 .char {
-  display: inline-block;
+  display: flex;
+  align-items: center;
   white-space: pre;
-  /* height: inherit; */
-  /* background-color: aqua; */
+  height: 1em;
 }
 
 .space {
-  display: inline-block;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
   width: 1.5em;
-  height: inherit;
   margin: 0;
   padding: 0;
+  white-space: pre;
   pointer-events: none; /* クリックを透過する */
   /* background-color: red; */
 }
 
 .indent-mark {
-  display: inline-block;
-  vertical-align: middle;
   width: 6px;
   height: 3px;
+  margin-right: 0.2em; /* テキストにくっつきすぎないように配慮 */
   background-color: #bbbbbb;
 }
 
 my-cursor {
   position: absolute;
+  height: 1em;
 }
