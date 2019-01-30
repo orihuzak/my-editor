@@ -64,10 +64,10 @@ export default class Editor extends HTMLElement {
   }
 
   private keyDown(e): void {
-    if (e.defaultPrevented) { return }
+    // if (e.defaultPrevented) { return }
     const curText = this.rawStr.parentNode
     print(`${e.type}: ${e.key}`)
-    if (!e.isComposing) { // IME入力中は発動しない
+    if (!e.isComposing) { // 非IME入力
       switch (e.key) {
         case 'Tab': {
           if (e.shiftKey) {
@@ -141,7 +141,7 @@ export default class Editor extends HTMLElement {
         }
       }
     }
-    e.preventDefault()
+    // e.preventDefault()
   }
 
   private keyPress(e): void {
@@ -153,16 +153,22 @@ export default class Editor extends HTMLElement {
   }
 
   private onInput(e): void {
-    // print(`${e.type}: ${e.inputType}: ${e.dataTransfer}: ${e.data}: ${e.isComposing}`)
-    if (this.rawStr.parentElement.firstChild === this.rawStr
-        || this.rawStr.previousElementSibling.className === 'indent') {
-      if (e.data === ' ' || e.data === '\u3000') {
-        // 行の先頭に半角/全角スペースが入らないようにする措置
-        this.cursor.resetValue()
+    print(`${e.type}: ${e.inputType}: ${e.dataTransfer}: ${e.data}: ${e.isComposing}`)
+    if (!e.isComposing) {
+      print('非IME入力')
+      if (e.data === '\u3000') {
+        const text = this.rawStr.parentElement
+        if (text.firstChild === this.rawStr) {
+          // 行の先頭に半角/全角スペースが入らないようにする措置
+          this.cursor.resetValue()
+        } else {
+          this.writeToLine()
+          return
+        }
+      } else {
+        this.writeToLine() // 下のresizeInputが二重になってるのでreturnを入れた
+        return
       }
-    } else if (e.data === '\u3000') {
-      this.writeToLine() // 下のresizeInputが二重になってるのでreturnを入れた
-      return
     }
     this.resizeInput()
   }
@@ -176,7 +182,6 @@ export default class Editor extends HTMLElement {
   }
 
   private writeToLine(): void {
-    // print(e.type)
     this.insertTextToLine()
     this.cursor.resetValue() // valueを初期化
     this.resizeInput()

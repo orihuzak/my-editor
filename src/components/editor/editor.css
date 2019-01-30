@@ -5,30 +5,22 @@
 
 .line {
   display: flex;
-  justify-content: flex-start;
-  width: 100%;
-  height: 1em;
+  height: 1.5em;
   background-color: lightblue;
   border-bottom: 1px dotted gray;
-  vertical-align: top;
 }
 
 .indent {
   display: flex;
-  justify-content: flex-start;
 }
 
 .text {
   display: flex;
-  justify-content: flex-start;
-  flex-wrap: wrap;
+  align-items: center;
 }
 
 .char {
-  display: flex;
-  align-items: center;
   white-space: pre;
-  height: 1em;
 }
 
 .space {
@@ -48,6 +40,9 @@
   height: 3px;
   margin-right: 0.2em; /* テキストにくっつきすぎないように配慮 */
   background-color: #bbbbbb;
+}
+
+.raw-string {
 }
 
 my-cursor {
