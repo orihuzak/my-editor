@@ -77,7 +77,16 @@ export default class Editor extends HTMLElement {
           }
           break
         } case 'Backspace': {
-          this.onDeleteKey()
+          if (this.rawStr.previousSibling) {
+            this.deleteLeft()
+          } else {
+            const indent = this.rawStr.parentNode.previousSibling
+            if (indent.firstChild) {
+              this.unindent()
+            } else {
+              this.joinPrevLine()
+            }
+          }
           break
         } case 'Enter': {
           this.insertNewLine()
@@ -246,26 +255,19 @@ export default class Editor extends HTMLElement {
     this.drawCursor()
   }
 
-  private onDeleteKey() {
-    const text = this.rawStr.parentElement
-    if (this.rawStr.previousSibling) {
-      this.deleteLeft()
-    } else {
-      if (text.previousSibling.firstChild) {
-        this.unindent()
-      } else {
-        const currentLine = text.parentElement
-        if (currentLine !== this.lines.firstChild) {
-          const children = [...text.children]
-          const prevLine = currentLine.previousElementSibling
-          const prevText = prevLine.getElementsByClassName('text')[0]
-          for (const child of children) {
-            prevText.appendChild(child)
-          }
-          this.lines.removeChild(currentLine)
-          this.drawCursor()
-        }
+  /* 現在の行を前の行と連結する */
+  private joinPrevLine(): void {
+    const text = this.rawStr.parentNode
+    const curLine = text.parentElement
+    if (curLine !== this.lines.firstChild) {
+      const curChars = [...text.children] // コピーする
+      const prevLine = curLine.previousSibling
+      const prevText = prevLine.lastChild
+      for (const char of curChars) {
+        prevText.appendChild(char)
       }
+      this.lines.removeChild(curLine)
+      this.drawCursor()
     }
   }
 
@@ -291,12 +293,14 @@ export default class Editor extends HTMLElement {
   }
 
   /** インデント部に子要素があればアンインデント */
-  private unindent(): void {
+  private unindent(): boolean {
     const indent = this.rawStr.parentNode.previousSibling
     if (indent.firstChild) {
       indent.removeChild(indent.firstChild)
       this.drawCursor()
+      return true
     }
+    return false
   }
 
   /** ページ頭へ移動 */
