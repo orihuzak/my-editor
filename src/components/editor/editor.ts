@@ -2,6 +2,7 @@ const css = require('./editor.css').toString()
 import Cursor from 'components/cursor/cursor'
 import Line from 'components/line/line'
 import { v4 } from 'uuid'
+import { deflate } from 'zlib';
 
 const print = console.log
 
@@ -156,6 +157,24 @@ export default class Editor extends HTMLElement {
     print(`${e.type}: ${e.inputType}: ${e.dataTransfer}: ${e.data}: ${e.isComposing}`)
     if (!e.isComposing) {
       print('非IME入力')
+      const text = this.rawStr.parentElement
+      switch (e.data) {
+        case ' ':
+        case '\u3000': {
+          if (text.firstChild === this.rawStr) {
+            // 行の先頭に半角/全角スペースが入らないようにする措置
+            this.cursor.resetValue()
+          } else {
+            this.writeToLine()
+            return
+          }
+          break
+        } default: {
+          this.writeToLine()
+          return
+        }
+      }
+      /*
       if (e.data === '\u3000') {
         const text = this.rawStr.parentElement
         if (text.firstChild === this.rawStr) {
@@ -169,6 +188,7 @@ export default class Editor extends HTMLElement {
         this.writeToLine() // 下のresizeInputが二重になってるのでreturnを入れた
         return
       }
+      */
     }
     this.resizeInput()
   }
