@@ -1,29 +1,28 @@
 {
   "name": "my-editor",
-  "version": "1.0.0",
+  "version": "0.0.0",
   "main": "app.js",
   "license": "MIT",
   "private": true,
   "scripts": {
-    "start": "electron .",
-    "dev": "webpack-dev-server --mode development",
-    "build": "webpack --mode development",
+    "dev": "webpack --mode development && electron .",
+    "build": "webpack --mode production",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "devDependencies": {
     "awesome-typescript-loader": ">=5.2.1",
     "css-loader": ">=2.1.0",
+    "electron-reload": "^1.4.0",
     "eslint": ">=5.12.0",
     "style-loader": ">=0.23.1",
     "tslint": ">=5.12.1",
     "typescript": ">=3.2.2",
     "webpack": ">=4.28.4",
-    "webpack-cli": ">=3.2.1",
-    "webpack-dev-server": ">=3.1.14"
+    "webpack-cli": ">=3.2.1"
   },
   "dependencies": {
     "@types/uuid": ">=3.4.4",
-    "electron": ">=3.0.10",
+    "electron": "^4.0.4",
     "uuid": ">=3.3.2"
   }
 }
